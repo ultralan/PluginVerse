@@ -73,6 +73,20 @@ async function main() {
     if (info.size < 1000) {
       fail(`${plugin.id} 发布脚本体积异常小`);
     }
+
+    if (plugin.id === "mianshiya") {
+      const requiredSnippets = [
+        "mianshiya-md-download-button",
+        "downloadMarkdown",
+        "URL.createObjectURL",
+        ".md",
+      ];
+      for (const snippet of requiredSnippets) {
+        if (!pluginSource.includes(snippet)) {
+          fail(`mianshiya 缺少 Markdown 下载能力标识：${snippet}`);
+        }
+      }
+    }
   }
 
   if (!clientText.includes("PluginVerse")) {

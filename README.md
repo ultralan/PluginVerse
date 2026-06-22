@@ -6,7 +6,7 @@ PluginVerse 是一个单入口油猴脚本系统。用户只安装 `client/plugi
   <a href="https://raw.githubusercontent.com/ultralan/PluginVerse/published/client/pluginverse.user.js" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;text-decoration:none;">一键安装客户端</a>
 </p>
 
-当前第一个插件是 `mianshiya`，由旧的面试鸭辅助脚本拆出。
+当前第一个插件是 `mianshiya`，由旧的面试鸭辅助脚本拆出，提供复制和下载当前页面 Markdown 的入口。
 
 ## 架构
 
