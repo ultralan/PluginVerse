@@ -38,7 +38,7 @@ jobs:
       - name: Build
         run: pnpm run build
         env:
-          PLUGINVERSE_PUBLIC_BASE_URL: ${{ vars.PLUGINVERSE_PUBLIC_BASE_URL || format('https://raw.githubusercontent.com/{0}/{1}/published', github.repository_owner, github.event.repository.name) }}
+          PLUGINVERSE_PUBLIC_BASE_URL: ${{ vars.PLUGINVERSE_PUBLIC_BASE_URL || format('https://fastly.jsdelivr.net/gh/{0}/{1}@published', github.repository_owner, github.event.repository.name) }}
           PLUGINVERSE_SUPABASE_URL: ${{ vars.PLUGINVERSE_SUPABASE_URL || 'https://ovxaymldzdiatllhjbvx.supabase.co' }}
           PLUGINVERSE_SUPABASE_ANON_KEY: ${{ secrets.PLUGINVERSE_SUPABASE_ANON_KEY || 'sb_publishable_H3ea5scu5VwoJAkA6ZDQtA_WTj-Eycq' }}
           PLUGINVERSE_BUILD_VERSION: 0.1.${{ github.run_number }}

@@ -8,8 +8,10 @@ const clientSourcePath = resolve(root, "client/pluginverse.user.js");
 const pluginsDir = resolve(root, "server/plugins");
 
 const publicBaseUrl = stripTrailingSlash(
-  process.env.PLUGINVERSE_PUBLIC_BASE_URL ||
-    "https://raw.githubusercontent.com/ultralan/PluginVerse/published",
+  normalizePublicBaseUrl(
+    process.env.PLUGINVERSE_PUBLIC_BASE_URL ||
+      "https://fastly.jsdelivr.net/gh/ultralan/PluginVerse@published",
+  ),
 );
 const manifestUrl = `${publicBaseUrl}/manifest.json`;
 const supabaseUrl = process.env.PLUGINVERSE_SUPABASE_URL || "";
@@ -21,6 +23,15 @@ const buildVersion =
 
 function stripTrailingSlash(value) {
   return String(value).replace(/\/+$/, "");
+}
+
+function normalizePublicBaseUrl(value) {
+  const rawMatch = String(value).match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/published\/?$/);
+  if (!rawMatch) {
+    return value;
+  }
+
+  return `https://fastly.jsdelivr.net/gh/${rawMatch[1]}/${rawMatch[2]}@published`;
 }
 
 function sha256(text) {

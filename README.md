@@ -3,7 +3,7 @@
 PluginVerse 是一个单入口油猴脚本系统。用户只安装 `client/pluginverse.user.js`，客户端启动后拉取远端 `manifest.json`，再按当前站点动态加载对应插件。
 
 <p>
-  <a href="https://raw.githubusercontent.com/ultralan/PluginVerse/published/client/pluginverse.user.js" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;text-decoration:none;">一键安装客户端</a>
+  <a href="https://www.tampermonkey.net/script_installation.php#url=https://fastly.jsdelivr.net/gh/ultralan/PluginVerse@published/client/pluginverse.user.js" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;text-decoration:none;">一键安装客户端</a>
 </p>
 
 当前第一个插件是 `mianshiya`，由旧的面试鸭辅助脚本拆出，提供复制和下载当前页面 Markdown 的入口。
@@ -45,11 +45,11 @@ pnpm run check
 
 ## GitHub 发布配置
 
-默认不依赖 GitHub Pages。推送到 `main` 后，Actions 会构建 `dist/`，再把运行时产物强制发布到 `published` 分支。客户端从 `raw.githubusercontent.com` 拉取 `manifest.json` 和插件脚本。
+默认不依赖 GitHub Pages。推送到 `main` 后，Actions 会构建 `dist/`，再把运行时产物强制发布到 `published` 分支。客户端默认从 `fastly.jsdelivr.net` 拉取 `manifest.json` 和插件脚本，避开 `raw.githubusercontent.com` 在部分网络下的 TLS 抖动。
 
 需要配置变量和密钥：
 
-- `vars.PLUGINVERSE_PUBLIC_BASE_URL`：运行时发布根地址。默认自动推导为 `https://raw.githubusercontent.com/<owner>/<repo>/published`。
+- `vars.PLUGINVERSE_PUBLIC_BASE_URL`：运行时发布根地址。默认自动推导为 `https://fastly.jsdelivr.net/gh/<owner>/<repo>@published`。
 - `vars.PLUGINVERSE_SUPABASE_URL`：Supabase 项目 URL；不配置时使用当前项目的公开 URL。
 - `secrets.PLUGINVERSE_SUPABASE_ANON_KEY`：Supabase anon 或 publishable key；不配置时使用当前项目的公开 publishable key。
 - `secrets.PLUGINVERSE_SUPABASE_SERVICE_ROLE_KEY`：可选，用于 Actions 写入 `plugin_verse_builds`。不配置也能发布。
@@ -93,7 +93,7 @@ pnpm run probe-supabase
 <PLUGINVERSE_PUBLIC_BASE_URL>/client/pluginverse.user.js
 ```
 
-本地 `dist/` 默认使用 `https://raw.githubusercontent.com/ultralan/PluginVerse/published` 作为发布地址；需要验证其他仓库或自定义域名时，设置 `PLUGINVERSE_PUBLIC_BASE_URL` 覆盖即可。
+本地 `dist/` 默认使用 `https://fastly.jsdelivr.net/gh/ultralan/PluginVerse@published` 作为发布地址；需要验证其他仓库或自定义域名时，设置 `PLUGINVERSE_PUBLIC_BASE_URL` 覆盖即可。
 
 之后新增站点插件时，只改 `server/plugins/` 并推送。用户侧仍然使用同一个客户端入口；插件代码每次页面加载都会按 manifest 动态拉取，不需要用户重新安装。若浏览器缓存或网络异常导致没有拉到新插件，可以在油猴菜单里点 `PluginVerse：清缓存并重新加载插件`。
 

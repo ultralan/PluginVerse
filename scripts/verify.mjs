@@ -106,6 +106,10 @@ async function main() {
     fail("发布客户端不应该依赖本地 server");
   }
 
+  if (clientText.includes("raw.githubusercontent.com") || manifestText.includes("raw.githubusercontent.com")) {
+    fail("发布产物不应该默认依赖 raw.githubusercontent.com 安装链路");
+  }
+
   if (clientText.includes("__PLUGINVERSE_")) {
     fail("客户端仍包含未替换的占位符");
   }
