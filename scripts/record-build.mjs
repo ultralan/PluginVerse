@@ -27,7 +27,7 @@ async function main() {
     plugins: manifest.plugins || [],
   };
 
-  const response = await fetch(`${supabaseUrl.replace(/\/+$/, "")}/rest/v1/pluginverse_builds`, {
+  const response = await fetch(`${supabaseUrl.replace(/\/+$/, "")}/rest/v1/plugin_verse_builds`, {
     method: "POST",
     headers: {
       apikey: serviceRoleKey,

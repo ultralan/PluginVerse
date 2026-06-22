@@ -23,7 +23,7 @@ PluginVerse 是一个单入口油猴脚本系统。用户只安装 `client/plugi
   -> 拉 GitHub raw manifest
   -> 按站点加载插件
   -> 插件执行页面能力
-  -> 日志写入 Supabase pluginverse_logs
+  -> 日志写入 Supabase plugin_verse_logs
   -> Agent 读取日志并改插件代码
   -> push GitHub
   -> Actions 构建发布新 manifest / 插件
@@ -50,9 +50,9 @@ pnpm run check
 需要配置变量和密钥：
 
 - `vars.PLUGINVERSE_PUBLIC_BASE_URL`：运行时发布根地址。默认自动推导为 `https://raw.githubusercontent.com/<owner>/<repo>/published`。
-- `vars.PLUGINVERSE_SUPABASE_URL`：Supabase 项目 URL。
-- `secrets.PLUGINVERSE_SUPABASE_ANON_KEY`：Supabase anon key。
-- `secrets.PLUGINVERSE_SUPABASE_SERVICE_ROLE_KEY`：可选，用于 Actions 写入 `pluginverse_builds`。不配置也能发布。
+- `vars.PLUGINVERSE_SUPABASE_URL`：Supabase 项目 URL；不配置时使用当前项目的公开 URL。
+- `secrets.PLUGINVERSE_SUPABASE_ANON_KEY`：Supabase anon 或 publishable key；不配置时使用当前项目的公开 publishable key。
+- `secrets.PLUGINVERSE_SUPABASE_SERVICE_ROLE_KEY`：可选，用于 Actions 写入 `plugin_verse_builds`。不配置也能发布。
 
 推送到 `main` 或 `master` 后，Actions 会构建并发布：
 
@@ -68,12 +68,22 @@ pnpm run check
 
 执行 `supabase/migrations/001_init.sql` 建表。
 
-浏览器端只使用 anon key 写入 `pluginverse_logs`。Agent 或 GitHub Actions 如需读取日志、写构建记录，应使用受控环境里的 service role key，不要把 service role key 写入油猴脚本。
+建表需要 Supabase SQL Editor、数据库密码或等价的管理权限。anon/publishable key 只能给浏览器客户端访问已有 REST 表，不能执行 DDL 建表。
+
+浏览器端只使用 anon key 写入 `plugin_verse_logs`。Agent 或 GitHub Actions 如需读取日志、写构建记录，应使用受控环境里的 service role key，不要把 service role key 写入油猴脚本。
 
 核心表：
 
-- `pluginverse_logs`：客户端和插件运行日志。
-- `pluginverse_builds`：发布记录，预留给 Actions 或 Agent 写入。
+- `plugin_verse_logs`：客户端和插件运行日志。
+- `plugin_verse_builds`：发布记录，预留给 Actions 或 Agent 写入。
+
+建表后可以用 anon key 验证 REST 链路：
+
+```bash
+PLUGINVERSE_SUPABASE_URL=你的项目URL \
+PLUGINVERSE_SUPABASE_ANON_KEY=你的anon或publishable key \
+pnpm run probe-supabase
+```
 
 ## 安装客户端
 

@@ -6,6 +6,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "record-build": "node scripts/record-build.mjs",
+    "probe-supabase": "node --use-env-proxy scripts/probe-supabase.mjs",
     "verify": "node scripts/verify.mjs",
     "check": "pnpm run build && pnpm run verify"
   }

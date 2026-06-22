@@ -87,6 +87,14 @@ async function main() {
     fail("客户端仍包含未替换的占位符");
   }
 
+  if (clientText.includes("pluginverse_logs") || manifestText.includes("pluginverse_")) {
+    fail("发布产物仍包含旧的 Supabase 表名前缀 pluginverse_");
+  }
+
+  if (!clientText.includes("/rest/v1/plugin_verse_logs")) {
+    fail("客户端日志上报必须写入 plugin_verse_logs");
+  }
+
   if (!process.exitCode) {
     console.log("验证通过：dist 产物结构、manifest、hash 和客户端占位符均正确。");
   }

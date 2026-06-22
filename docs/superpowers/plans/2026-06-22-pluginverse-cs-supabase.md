@@ -32,7 +32,7 @@
 **Files:**
 - Create: `supabase/migrations/001_init.sql`
 
-- [x] **Step 1: 建立 `pluginverse_builds` 和 `pluginverse_logs` 表**
+- [x] **Step 1: 建立 `plugin_verse_builds` 和 `plugin_verse_logs` 表**
 - [x] **Step 2: 为日志表配置插入策略和必要索引**
 - [x] **Step 3: 为构建记录保留服务端写入能力**
 

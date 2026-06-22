@@ -179,7 +179,7 @@
     try {
       GM_xmlhttpRequest({
         method: "POST",
-        url: `${SUPABASE_URL.replace(/\/+$/, "")}/rest/v1/pluginverse_logs`,
+        url: `${SUPABASE_URL.replace(/\/+$/, "")}/rest/v1/plugin_verse_logs`,
         headers: {
           apikey: SUPABASE_ANON_KEY,
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
