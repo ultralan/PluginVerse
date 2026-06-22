@@ -80,6 +80,11 @@ async function main() {
         "downloadMarkdown",
         "URL.createObjectURL",
         ".md",
+        "nodeToMarkdown",
+        "markdownImage",
+        "markdownTable",
+        "absoluteUrl",
+        "PRE",
       ];
       for (const snippet of requiredSnippets) {
         if (!pluginSource.includes(snippet)) {
