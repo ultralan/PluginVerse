@@ -1,0 +1,12 @@
+{
+  "name": "pluginverse",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "record-build": "node scripts/record-build.mjs",
+    "verify": "node scripts/verify.mjs",
+    "check": "pnpm run build && pnpm run verify"
+  }
+}

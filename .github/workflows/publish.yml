@@ -1,0 +1,71 @@
+name: publish
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+        env:
+          PLUGINVERSE_PUBLIC_BASE_URL: ${{ vars.PLUGINVERSE_PUBLIC_BASE_URL || format('https://{0}.github.io/{1}', github.repository_owner, github.event.repository.name) }}
+          PLUGINVERSE_SUPABASE_URL: ${{ vars.PLUGINVERSE_SUPABASE_URL }}
+          PLUGINVERSE_SUPABASE_ANON_KEY: ${{ secrets.PLUGINVERSE_SUPABASE_ANON_KEY }}
+          PLUGINVERSE_BUILD_VERSION: 0.1.${{ github.run_number }}
+
+      - name: Verify
+        run: pnpm run verify
+
+      - name: Record build
+        run: pnpm run record-build
+        env:
+          PLUGINVERSE_SUPABASE_URL: ${{ vars.PLUGINVERSE_SUPABASE_URL }}
+          PLUGINVERSE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PLUGINVERSE_SUPABASE_SERVICE_ROLE_KEY }}
+          GITHUB_SHA: ${{ github.sha }}
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

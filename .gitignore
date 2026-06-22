@@ -1,0 +1,17 @@
+dist/
+.env
+.env.*
+!.env.example
+node_modules/
+*.log
+*.tmp
+.DS_Store
+
+# 本地题库和旧调试脚本不进入公开仓库。
+AI应用开发面试题.jsonl
+AI应用开发面试题.jsonl.bak
+AI应用开发面试经验汇总.md
+mianshiya-debug.log.jsonl
+mianshiya-loader.user.js
+mianshiya-log-receiver.mjs
+mianshiya-unlock-copy.user.js
