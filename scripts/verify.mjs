@@ -85,6 +85,10 @@ async function main() {
         "markdownTable",
         "absoluteUrl",
         "PRE",
+        "registerPluginMenuCommands",
+        "PluginVerse.registerMenuCommand",
+        "GM_registerMenuCommand",
+        "mianshiya_context_menu_fallback_mousedown",
       ];
       for (const snippet of requiredSnippets) {
         if (!pluginSource.includes(snippet)) {
@@ -112,6 +116,17 @@ async function main() {
 
   if (!clientText.includes("/rest/v1/plugin_verse_logs")) {
     fail("客户端日志上报必须写入 plugin_verse_logs");
+  }
+
+  const requiredClientSnippets = [
+    "registerMenuCommand(name, handler)",
+    "unregisterMenuCommand(commandId)",
+    "PluginVerse：清缓存并重新加载插件",
+  ];
+  for (const snippet of requiredClientSnippets) {
+    if (!clientText.includes(snippet)) {
+      fail(`客户端缺少插件免重装调试能力：${snippet}`);
+    }
   }
 
   if (!process.exitCode) {

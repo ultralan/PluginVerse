@@ -95,7 +95,7 @@ pnpm run probe-supabase
 
 本地 `dist/` 默认使用 `https://raw.githubusercontent.com/ultralan/PluginVerse/published` 作为发布地址；需要验证其他仓库或自定义域名时，设置 `PLUGINVERSE_PUBLIC_BASE_URL` 覆盖即可。
 
-之后新增站点插件时，只改 `server/plugins/` 并推送。用户侧仍然使用同一个客户端入口。
+之后新增站点插件时，只改 `server/plugins/` 并推送。用户侧仍然使用同一个客户端入口；插件代码每次页面加载都会按 manifest 动态拉取，不需要用户重新安装。若浏览器缓存或网络异常导致没有拉到新插件，可以在油猴菜单里点 `PluginVerse：清缓存并重新加载插件`。
 
 ## 新增插件
 

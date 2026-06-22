@@ -11,6 +11,7 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
+// @grant        GM_unregisterMenuCommand
 // @grant        GM_setClipboard
 // @connect      *
 // ==/UserScript==
@@ -253,6 +254,36 @@
       setClipboard(text) {
         GM_setClipboard(String(text || ""), "text");
       },
+      registerMenuCommand(name, handler) {
+        if (typeof GM_registerMenuCommand !== "function") {
+          emit("warn", "plugin_menu_unavailable", { pluginId: plugin.id, name });
+          return;
+        }
+
+        return GM_registerMenuCommand(`${plugin.name || plugin.id}：${name}`, () => {
+          try {
+            const result = handler?.();
+            if (result && typeof result.catch === "function") {
+              result.catch((error) => emit("error", "plugin_menu_action_failed", {
+                pluginId: plugin.id,
+                name,
+                error: safeString(error),
+              }));
+            }
+          } catch (error) {
+            emit("error", "plugin_menu_action_failed", {
+              pluginId: plugin.id,
+              name,
+              error: safeString(error),
+            });
+          }
+        });
+      },
+      unregisterMenuCommand(commandId) {
+        if (commandId && typeof GM_unregisterMenuCommand === "function") {
+          GM_unregisterMenuCommand(commandId);
+        }
+      },
       postJson: async (url, payload, timeout) => {
         const text = await requestText({
           method: "POST",
@@ -314,6 +345,10 @@
       GM_registerMenuCommand("PluginVerse：复制调试日志", copyDebugLogs);
       GM_registerMenuCommand("PluginVerse：重新加载插件", () => {
         boot().catch((error) => emit("error", "manual_reload_failed", error));
+      });
+      GM_registerMenuCommand("PluginVerse：清缓存并重新加载插件", () => {
+        gmSet(MANIFEST_CACHE_KEY, null);
+        boot().catch((error) => emit("error", "manual_reload_after_cache_clear_failed", error));
       });
     } catch (error) {
       emit("warn", "register_menu_failed", error);
