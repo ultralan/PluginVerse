@@ -6,6 +6,7 @@ const root = process.cwd();
 const distDir = resolve(root, "dist");
 const manifestPath = resolve(distDir, "manifest.json");
 const clientPath = resolve(distDir, "client/pluginverse.user.js");
+const readmePath = resolve(root, "README.md");
 
 function fail(message) {
   console.error(`验证失败：${message}`);
@@ -28,7 +29,8 @@ function sha256(text) {
 async function main() {
   const manifestText = await mustRead(manifestPath);
   const clientText = await mustRead(clientPath);
-  if (!manifestText || !clientText) {
+  const readmeText = await mustRead(readmePath);
+  if (!manifestText || !clientText || !readmeText) {
     return;
   }
 
@@ -108,6 +110,10 @@ async function main() {
 
   if (clientText.includes("raw.githubusercontent.com") || manifestText.includes("raw.githubusercontent.com")) {
     fail("发布产物不应该默认依赖 raw.githubusercontent.com 安装链路");
+  }
+
+  if (readmeText.includes("tampermonkey.net/script_installation.php")) {
+    fail("README 安装入口不应该指向 Tampermonkey 中转页");
   }
 
   if (clientText.includes("__PLUGINVERSE_")) {
