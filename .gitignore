@@ -6,6 +6,7 @@ node_modules/
 *.log
 *.tmp
 .DS_Store
+.publish/
 
 # 本地题库和旧调试脚本不进入公开仓库。
 AI应用开发面试题.jsonl

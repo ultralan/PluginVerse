@@ -8,20 +8,15 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
+  group: publish-runtime
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,7 +38,7 @@ jobs:
       - name: Build
         run: pnpm run build
         env:
-          PLUGINVERSE_PUBLIC_BASE_URL: ${{ vars.PLUGINVERSE_PUBLIC_BASE_URL || format('https://{0}.github.io/{1}', github.repository_owner, github.event.repository.name) }}
+          PLUGINVERSE_PUBLIC_BASE_URL: ${{ vars.PLUGINVERSE_PUBLIC_BASE_URL || format('https://raw.githubusercontent.com/{0}/{1}/published', github.repository_owner, github.event.repository.name) }}
           PLUGINVERSE_SUPABASE_URL: ${{ vars.PLUGINVERSE_SUPABASE_URL }}
           PLUGINVERSE_SUPABASE_ANON_KEY: ${{ secrets.PLUGINVERSE_SUPABASE_ANON_KEY }}
           PLUGINVERSE_BUILD_VERSION: 0.1.${{ github.run_number }}
@@ -58,14 +53,21 @@ jobs:
           PLUGINVERSE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PLUGINVERSE_SUPABASE_SERVICE_ROLE_KEY }}
           GITHUB_SHA: ${{ github.sha }}
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publish runtime branch
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          rm -rf .publish
+          mkdir .publish
+          cp -R dist/. .publish/
+          touch .publish/.nojekyll
+          cd .publish
+          git init
+          git checkout -b published
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "发布 PluginVerse 运行时 ${GITHUB_SHA}"
+          git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" published

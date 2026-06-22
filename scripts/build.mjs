@@ -8,7 +8,8 @@ const clientSourcePath = resolve(root, "client/pluginverse.user.js");
 const pluginsDir = resolve(root, "server/plugins");
 
 const publicBaseUrl = stripTrailingSlash(
-  process.env.PLUGINVERSE_PUBLIC_BASE_URL || "https://ultralan.github.io/PluginVerse",
+  process.env.PLUGINVERSE_PUBLIC_BASE_URL ||
+    "https://raw.githubusercontent.com/ultralan/PluginVerse/published",
 );
 const manifestUrl = `${publicBaseUrl}/manifest.json`;
 const supabaseUrl = process.env.PLUGINVERSE_SUPABASE_URL || "";

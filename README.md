@@ -10,13 +10,13 @@ PluginVerse 是一个单入口油猴脚本系统。用户只安装 `client/plugi
 - `server/plugins/`：插件实现目录，每个站点或能力一个插件。
 - `scripts/`：构建和验证脚本。
 - `supabase/`：Supabase 表结构和 RLS 策略。
-- `.github/workflows/`：GitHub Actions 发布到 Pages。
+- `.github/workflows/`：GitHub Actions 构建运行时产物并发布到 `published` 分支。
 
 运行时链路：
 
 ```text
 浏览器 PluginVerse client
-  -> 拉 GitHub Pages manifest
+  -> 拉 GitHub raw manifest
   -> 按站点加载插件
   -> 插件执行页面能力
   -> 日志写入 Supabase pluginverse_logs
@@ -39,13 +39,13 @@ pnpm run check
 - 发布客户端没有依赖 `127.0.0.1` 或 `localhost`；
 - 构建占位符已经被替换。
 
-## GitHub Pages 配置
+## GitHub 发布配置
 
-在仓库的 `Settings -> Pages` 中选择 GitHub Actions 部署。
+默认不依赖 GitHub Pages。推送到 `main` 后，Actions 会构建 `dist/`，再把运行时产物强制发布到 `published` 分支。客户端从 `raw.githubusercontent.com` 拉取 `manifest.json` 和插件脚本。
 
 需要配置变量和密钥：
 
-- `vars.PLUGINVERSE_PUBLIC_BASE_URL`：Pages 发布根地址，例如 `https://<user>.github.io/<repo>`。
+- `vars.PLUGINVERSE_PUBLIC_BASE_URL`：运行时发布根地址。默认自动推导为 `https://raw.githubusercontent.com/<owner>/<repo>/published`。
 - `vars.PLUGINVERSE_SUPABASE_URL`：Supabase 项目 URL。
 - `secrets.PLUGINVERSE_SUPABASE_ANON_KEY`：Supabase anon key。
 - `secrets.PLUGINVERSE_SUPABASE_SERVICE_ROLE_KEY`：可选，用于 Actions 写入 `pluginverse_builds`。不配置也能发布。
@@ -56,7 +56,9 @@ pnpm run check
 - `client/pluginverse.user.js`
 - `plugins/<plugin-id>/plugin.user.js`
 
-`PLUGINVERSE_PUBLIC_BASE_URL` 未配置时，Actions 会按仓库自动推导为 `https://<owner>.github.io/<repo>`。客户端版本号使用 `0.1.<GitHub run number>`，确保油猴更新比较是单调递增的。
+客户端版本号使用 `0.1.<GitHub run number>`，确保油猴更新比较是单调递增的。
+
+如果之后仍想切回 GitHub Pages，可以先在仓库设置里启用 Pages，再把 `PLUGINVERSE_PUBLIC_BASE_URL` 改成 Pages 根地址。
 
 ## Supabase
 
@@ -77,7 +79,7 @@ pnpm run check
 <PLUGINVERSE_PUBLIC_BASE_URL>/client/pluginverse.user.js
 ```
 
-本地 `dist/` 默认使用 `https://ultralan.github.io/PluginVerse` 作为发布地址；需要验证其他仓库或自定义域名时，设置 `PLUGINVERSE_PUBLIC_BASE_URL` 覆盖即可。
+本地 `dist/` 默认使用 `https://raw.githubusercontent.com/ultralan/PluginVerse/published` 作为发布地址；需要验证其他仓库或自定义域名时，设置 `PLUGINVERSE_PUBLIC_BASE_URL` 覆盖即可。
 
 之后新增站点插件时，只改 `server/plugins/` 并推送。用户侧仍然使用同一个客户端入口。
 
