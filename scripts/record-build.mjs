@@ -1,8 +1,6 @@
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
-
-const supabaseUrl = process.env.PLUGINVERSE_SUPABASE_URL || "";
-const serviceRoleKey = process.env.PLUGINVERSE_SUPABASE_SERVICE_ROLE_KEY || "";
+const supabaseUrl = process.env.TMB_SUPABASE_URL || "";
+const serviceRoleKey = process.env.TMB_SUPABASE_SERVICE_ROLE_KEY || "";
+const schema = "tampermonkey_base";
 
 function required(value, name) {
   if (!value) {
@@ -12,27 +10,29 @@ function required(value, name) {
 }
 
 async function main() {
+  const version = process.env.TMB_BUILD_VERSION || `local-${new Date().toISOString()}`;
+
   if (!supabaseUrl || !serviceRoleKey) {
     console.log("未配置 Supabase service role，跳过构建记录写入。");
     return;
   }
 
-  const manifest = JSON.parse(await readFile(resolve(process.cwd(), "dist/manifest.json"), "utf8"));
   const payload = {
-    version: manifest.version,
+    repo: process.env.GITHUB_REPOSITORY || "ultralan/tampermonkey-base",
+    version,
     commit_sha: process.env.GITHUB_SHA || "",
-    manifest_url: `${manifest.publicBaseUrl}/manifest.json`,
-    client_url: manifest.client?.url || "",
-    public_base_url: required(manifest.publicBaseUrl, "manifest.publicBaseUrl"),
-    plugins: manifest.plugins || [],
+    public_base_url: process.env.TMB_PUBLIC_BASE_URL || "",
+    artifact_url: `${(process.env.TMB_PUBLIC_BASE_URL || "").replace(/\/+$/, "")}/client/tampermonkey-base.user.js`,
+    sha256: "",
   };
 
-  const response = await fetch(`${supabaseUrl.replace(/\/+$/, "")}/rest/v1/plugin_verse_builds`, {
+  const response = await fetch(`${required(supabaseUrl, "TMB_SUPABASE_URL").replace(/\/+$/, "")}/rest/v1/builds`, {
     method: "POST",
     headers: {
       apikey: serviceRoleKey,
       Authorization: `Bearer ${serviceRoleKey}`,
       "Content-Type": "application/json",
+      "Content-Profile": schema,
       Prefer: "return=minimal",
     },
     body: JSON.stringify(payload),

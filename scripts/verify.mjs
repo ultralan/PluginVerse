@@ -1,11 +1,9 @@
-import { createHash } from "node:crypto";
-import { readFile, stat } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const root = process.cwd();
 const distDir = resolve(root, "dist");
-const manifestPath = resolve(distDir, "manifest.json");
-const clientPath = resolve(distDir, "client/pluginverse.user.js");
+const clientPath = resolve(distDir, "client/tampermonkey-base.user.js");
 const readmePath = resolve(root, "README.md");
 
 function fail(message) {
@@ -22,125 +20,55 @@ async function mustRead(path) {
   }
 }
 
-function sha256(text) {
-  return createHash("sha256").update(text).digest("hex");
-}
-
 async function main() {
-  const manifestText = await mustRead(manifestPath);
   const clientText = await mustRead(clientPath);
   const readmeText = await mustRead(readmePath);
-  if (!manifestText || !clientText || !readmeText) {
+  if (!clientText || !readmeText) {
     return;
-  }
-
-  let manifest;
-  try {
-    manifest = JSON.parse(manifestText);
-  } catch (error) {
-    fail(`manifest 不是合法 JSON: ${error.message}`);
-    return;
-  }
-
-  if (manifest.name !== "PluginVerse") {
-    fail("manifest.name 必须是 PluginVerse");
-  }
-
-  if (!Array.isArray(manifest.plugins) || manifest.plugins.length < 1) {
-    fail("manifest.plugins 至少要包含一个插件");
-  }
-
-  for (const plugin of manifest.plugins || []) {
-    if (!plugin.id || !plugin.entry || !plugin.sha256 || !Array.isArray(plugin.matches)) {
-      fail(`插件元数据不完整：${JSON.stringify(plugin)}`);
-      continue;
-    }
-
-    const pluginPath = resolve(distDir, plugin.entry);
-    const pluginSource = await mustRead(pluginPath);
-    if (!pluginSource) {
-      continue;
-    }
-
-    const actualHash = sha256(pluginSource);
-    if (actualHash !== plugin.sha256) {
-      fail(`${plugin.id} 的 sha256 不匹配`);
-    }
-
-    if (pluginSource.includes("__PLUGINVERSE_")) {
-      fail(`${plugin.id} 仍包含未替换的占位符`);
-    }
-
-    const info = await stat(pluginPath);
-    if (info.size < 1000) {
-      fail(`${plugin.id} 发布脚本体积异常小`);
-    }
-
-    if (plugin.id === "mianshiya") {
-      const requiredSnippets = [
-        "mianshiya-md-download-button",
-        "downloadMarkdown",
-        "URL.createObjectURL",
-        ".md",
-        "nodeToMarkdown",
-        "markdownImage",
-        "markdownTable",
-        "absoluteUrl",
-        "PRE",
-        "registerPluginMenuCommands",
-        "PluginVerse.registerMenuCommand",
-        "GM_registerMenuCommand",
-        "mianshiya_context_menu_fallback_mousedown",
-      ];
-      for (const snippet of requiredSnippets) {
-        if (!pluginSource.includes(snippet)) {
-          fail(`mianshiya 缺少 Markdown 下载能力标识：${snippet}`);
-        }
-      }
-    }
-  }
-
-  if (!clientText.includes("PluginVerse")) {
-    fail("客户端脚本缺少 PluginVerse 标识");
   }
 
   if (clientText.includes("127.0.0.1") || clientText.includes("localhost")) {
     fail("发布客户端不应该依赖本地 server");
   }
 
-  if (clientText.includes("raw.githubusercontent.com") || manifestText.includes("raw.githubusercontent.com")) {
-    fail("发布产物不应该默认依赖 raw.githubusercontent.com 安装链路");
+  if (clientText.includes("raw.githubusercontent.com")) {
+    fail("发布客户端不应该依赖 raw.githubusercontent.com 安装链路");
   }
 
-  if (readmeText.includes("tampermonkey.net/script_installation.php")) {
-    fail("README 安装入口不应该指向 Tampermonkey 中转页");
-  }
-
-  if (clientText.includes("__PLUGINVERSE_")) {
+  if (clientText.includes("__TMB_")) {
     fail("客户端仍包含未替换的占位符");
   }
 
-  if (clientText.includes("pluginverse_logs") || manifestText.includes("pluginverse_")) {
-    fail("发布产物仍包含旧的 Supabase 表名前缀 pluginverse_");
-  }
-
-  if (!clientText.includes("/rest/v1/plugin_verse_logs")) {
-    fail("客户端日志上报必须写入 plugin_verse_logs");
+  if (/pluginverse|plugin_verse|PluginVerse/i.test(clientText)) {
+    fail("客户端仍包含旧的 PluginVerse 标识");
   }
 
   const requiredClientSnippets = [
-    "registerMenuCommand(name, handler)",
-    "unregisterMenuCommand(commandId)",
-    "PluginVerse：清缓存并重新加载插件",
+    "Tampermonkey Base",
+    "SCRIPT_URL_ALLOWLIST",
+    "/rest/v1/client_logs",
+    "Content-Profile",
+    "registry_cache_fallback",
+    "plugin_load_failed",
+    "Tampermonkey Base：清缓存并重新加载插件",
+    "rest(path, options",
   ];
   for (const snippet of requiredClientSnippets) {
     if (!clientText.includes(snippet)) {
-      fail(`客户端缺少插件免重装调试能力：${snippet}`);
+      fail(`客户端缺少注册中心模式必备代码：${snippet}`);
     }
   }
 
+  if (clientText.includes("__TMB_SUPABASE_ANON_KEY__") === false && !clientText.includes("apikey")) {
+    fail("客户端缺少 Supabase 认证头");
+  }
+
+  if (readmeText.includes("pluginverse") || readmeText.includes("PluginVerse")) {
+    fail("README 仍包含旧项目名 PluginVerse");
+  }
+
   if (!process.exitCode) {
-    console.log("验证通过：dist 产物结构、manifest、hash 和客户端占位符均正确。");
+    console.log("验证通过：客户端产物、占位符替换、注册中心链路标识均正确。");
   }
 }
 

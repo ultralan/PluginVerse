@@ -1,5 +1,6 @@
-const supabaseUrl = process.env.PLUGINVERSE_SUPABASE_URL || "";
-const anonKey = process.env.PLUGINVERSE_SUPABASE_ANON_KEY || "";
+const supabaseUrl = process.env.TMB_SUPABASE_URL || "";
+const anonKey = process.env.TMB_SUPABASE_ANON_KEY || "";
+const SCHEMA = "tampermonkey_base";
 
 function required(value, name) {
   if (!value) {
@@ -9,13 +10,14 @@ function required(value, name) {
 }
 
 async function request(path, options = {}) {
-  const baseUrl = required(supabaseUrl, "PLUGINVERSE_SUPABASE_URL").replace(/\/+$/, "");
-  const key = required(anonKey, "PLUGINVERSE_SUPABASE_ANON_KEY");
+  const baseUrl = required(supabaseUrl, "TMB_SUPABASE_URL").replace(/\/+$/, "");
+  const key = required(anonKey, "TMB_SUPABASE_ANON_KEY");
   const response = await fetch(`${baseUrl}${path}`, {
     ...options,
     headers: {
       apikey: key,
       Authorization: `Bearer ${key}`,
+      "Accept-Profile": SCHEMA,
       ...options.headers,
     },
   });
@@ -23,42 +25,17 @@ async function request(path, options = {}) {
   return { response, text };
 }
 
-function isMissingTable(response, text) {
-  if (response.status !== 404) {
-    return false;
+async function probeRegistry() {
+  const { response, text } = await request("/rest/v1/plugins?select=id&enabled=eq.true&limit=1");
+  if (!response.ok) {
+    throw new Error(`plugins 注册中心查询失败：HTTP ${response.status} ${text}`);
   }
-
-  try {
-    const error = JSON.parse(text);
-    return error.code === "PGRST205";
-  } catch {
-    return false;
-  }
-}
-
-async function probeTableRoute(table, expectedAnonAccess) {
-  const { response, text } = await request(`/rest/v1/${table}?select=id&limit=1`);
-
-  if (isMissingTable(response, text)) {
-    throw new Error(`${table} 查询失败：HTTP ${response.status} ${text}`);
-  }
-
-  if (response.ok) {
-    console.log(`${table} 可查询。`);
-    return;
-  }
-
-  if (!expectedAnonAccess && (response.status === 401 || response.status === 403)) {
-    console.log(`${table} 已存在，且 anon 无读取权限，符合预期。`);
-    return;
-  }
-
-  throw new Error(`${table} 查询失败：HTTP ${response.status} ${text}`);
+  console.log("tampermonkey_base.plugins 注册中心可查询。");
 }
 
 async function probeInsertLog() {
   const payload = {
-    client_name: "PluginVerse",
+    client_name: "Tampermonkey Base",
     client_version: "probe",
     level: "info",
     event: "agent_schema_probe",
@@ -68,25 +45,25 @@ async function probeInsertLog() {
     session_id: "agent-probe",
   };
 
-  const { response, text } = await request("/rest/v1/plugin_verse_logs", {
+  const { response, text } = await request("/rest/v1/client_logs", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "Content-Profile": SCHEMA,
       Prefer: "return=minimal",
     },
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
-    throw new Error(`plugin_verse_logs 插入失败：HTTP ${response.status} ${text}`);
+    throw new Error(`client_logs 插入失败：HTTP ${response.status} ${text}`);
   }
 
-  console.log("plugin_verse_logs anon 插入可用。");
+  console.log("tampermonkey_base.client_logs anon 插入可用。");
 }
 
 async function main() {
-  await probeTableRoute("plugin_verse_logs", false);
-  await probeTableRoute("plugin_verse_builds", false);
+  await probeRegistry();
   await probeInsertLog();
 }
 

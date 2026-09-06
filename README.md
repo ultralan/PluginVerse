@@ -1,33 +1,36 @@
-# PluginVerse
+# Tampermonkey Base
 
-PluginVerse 是一个单入口油猴脚本系统。用户只安装 `client/pluginverse.user.js`，客户端启动后拉取远端 `manifest.json`，再按当前站点动态加载对应插件。
+Tampermonkey Base 是一个油猴插件基座：**一个客户端 + Supabase 注册中心 + 任意数量的独立插件仓库**，微服务式的动态注册与发现。
 
 <p>
-  <a href="https://fastly.jsdelivr.net/gh/ultralan/PluginVerse@published/client/pluginverse.user.js" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;text-decoration:none;">一键安装客户端</a>
+  <a href="https://fastly.jsdelivr.net/gh/ultralan/tampermonkey-base@published/client/tampermonkey-base.user.js" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;text-decoration:none;">一键安装客户端</a>
 </p>
-
-当前第一个插件是 `mianshiya`，由旧的面试鸭辅助脚本拆出，提供复制和下载当前页面 Markdown 的入口。
 
 ## 架构
 
-- `client/`：唯一用户安装入口，负责拉取清单、匹配插件、加载脚本、上报日志。
-- `server/plugins/`：插件实现目录，每个站点或能力一个插件。
-- `scripts/`：构建和验证脚本。
-- `supabase/`：Supabase 表结构和 RLS 策略。
-- `.github/workflows/`：GitHub Actions 构建运行时产物并发布到 `published` 分支。
-
-运行时链路：
-
-```text
-浏览器 PluginVerse client
-  -> 拉 GitHub raw manifest
-  -> 按站点加载插件
-  -> 插件执行页面能力
-  -> 日志写入 Supabase plugin_verse_logs
-  -> Agent 读取日志并改插件代码
-  -> push GitHub
-  -> Actions 构建发布新 manifest / 插件
 ```
+基座仓 ultralan/tampermonkey-base              插件仓 ultralan/tampermonkey-plugin-*
+  client/tampermonkey-base.user.js               plugin.json + plugin.user.js
+  scripts/ 构建验证 + supabase/ 公共表            .github/workflows/publish.yml
+        │                                              │ push → Actions
+        │ anon 查询注册中心                             │ ① plugin.user.js 发到本仓 published 分支
+        ▼                                              │ ② sha256 + service key upsert 注册表
+Supabase tampermonkey_base schema  ◄───────────────────┘
+  plugins（注册中心）/ client_logs / builds
+  （各插件的业务表由插件仓自带 migration 维护）
+```
+
+- **插件发布 = 自注册**：插件仓推送 `main` 后，Actions 发布产物并 upsert `tampermonkey_base.plugins` 注册表
+- **客户端动态发现**：每次页面加载时查询注册中心（失败回退 GM 缓存），按 `matches` 匹配当前站点，拉取插件脚本并校验 sha256 后执行
+- **新增插件仓零基座改动**：基座客户端下一次刷新自动发现新插件
+- **供应链防护**：客户端只执行 jsDelivr 上 `ultralan` 名下仓库的脚本，注册表驱动 + 域白名单 + hash 校验三重把关
+
+## 目录结构
+
+- `client/`：基座客户端（唯一需要安装的油猴脚本）
+- `scripts/`：构建、验证、Supabase 探测与构建记录脚本
+- `supabase/migrations/`：公共表（注册中心、日志、构建记录）的初始化 SQL
+- `.github/workflows/`：构建客户端并发布到 `published` 分支
 
 ## 本地构建
 
@@ -36,101 +39,66 @@ pnpm install --lockfile-only
 pnpm run check
 ```
 
-`pnpm run check` 会生成 `dist/`，并验证：
+`pnpm run check` 会生成 `dist/` 并验证占位符替换、无本地地址残留、注册中心链路代码完整。
 
-- `dist/manifest.json` 存在且包含插件；
-- 插件脚本 hash 与 manifest 一致；
-- 发布客户端没有依赖 `127.0.0.1` 或 `localhost`；
-- 构建占位符已经被替换。
+## 环境变量
 
-## GitHub 发布配置
+- `TMB_PUBLIC_BASE_URL`：发布根地址，默认 `https://fastly.jsdelivr.net/gh/ultralan/tampermonkey-base@published`
+- `TMB_SUPABASE_URL` / `TMB_SUPABASE_ANON_KEY`：注入客户端，用于查询注册中心与写日志
+- `TMB_SUPABASE_SERVICE_ROLE_KEY`：Actions 写构建记录用（可选）
 
-默认不依赖 GitHub Pages。推送到 `main` 后，Actions 会构建 `dist/`，再把运行时产物强制发布到 `published` 分支。客户端默认从 `fastly.jsdelivr.net` 拉取 `manifest.json` 和插件脚本，避开 `raw.githubusercontent.com` 在部分网络下的 TLS 抖动。
+## Supabase 初始化
 
-需要配置变量和密钥：
-
-- `vars.PLUGINVERSE_PUBLIC_BASE_URL`：运行时发布根地址。默认自动推导为 `https://fastly.jsdelivr.net/gh/<owner>/<repo>@published`。
-- `vars.PLUGINVERSE_SUPABASE_URL`：Supabase 项目 URL；不配置时使用当前项目的公开 URL。
-- `secrets.PLUGINVERSE_SUPABASE_ANON_KEY`：Supabase anon 或 publishable key；不配置时使用当前项目的公开 publishable key。
-- `secrets.PLUGINVERSE_SUPABASE_SERVICE_ROLE_KEY`：可选，用于 Actions 写入 `plugin_verse_builds`。不配置也能发布。
-
-推送到 `main` 或 `master` 后，Actions 会构建并发布：
-
-- `manifest.json`
-- `client/pluginverse.user.js`
-- `plugins/<plugin-id>/plugin.user.js`
-
-客户端版本号使用 `0.1.<GitHub run number>`，确保油猴更新比较是单调递增的。
-
-如果之后仍想切回 GitHub Pages，可以先在仓库设置里启用 Pages，再把 `PLUGINVERSE_PUBLIC_BASE_URL` 改成 Pages 根地址。
-
-## Supabase
-
-执行 `supabase/migrations/001_init.sql` 建表。
-
-建表需要 Supabase SQL Editor、数据库密码或等价的管理权限。anon/publishable key 只能给浏览器客户端访问已有 REST 表，不能执行 DDL 建表。
-
-浏览器端只使用 anon key 写入 `plugin_verse_logs`。Agent 或 GitHub Actions 如需读取日志、写构建记录，应使用受控环境里的 service role key，不要把 service role key 写入油猴脚本。
-
-核心表：
-
-- `plugin_verse_logs`：客户端和插件运行日志。
-- `plugin_verse_builds`：发布记录，预留给 Actions 或 Agent 写入。
-
-建表后可以用 anon key 验证 REST 链路：
+1. 在 SQL Editor 执行 `supabase/migrations/002_federated.sql`；
+2. Dashboard → Settings → API → **Exposed schemas** 添加 `tampermonkey_base`（PostgREST 默认只暴露 public，这步必须手动做）；
+3. 验证链路：
 
 ```bash
-PLUGINVERSE_SUPABASE_URL=你的项目URL \
-PLUGINVERSE_SUPABASE_ANON_KEY=你的anon或publishable key \
+TMB_SUPABASE_URL=你的项目URL \
+TMB_SUPABASE_ANON_KEY=你的publishable key \
 pnpm run probe-supabase
 ```
 
-## 安装客户端
+## 权限模型
 
-发布完成后，用户只需要安装：
+| 表 | anon | authenticated | service role |
+|---|---|---|---|
+| `plugins` | select（仅 enabled=true） | select | 读写（注册/停用） |
+| `client_logs` | insert | select | 读写 |
+| `builds` | - | select | 读写 |
+| 插件业务表 | 由插件仓 migration 自行定义 | | |
 
-```text
-<PLUGINVERSE_PUBLIC_BASE_URL>/client/pluginverse.user.js
-```
+注册表停用插件：在 Supabase 面板把 `plugins.enabled` 翻成 false 即可，客户端不再加载；发布流程不会改动该开关。
 
-本地 `dist/` 默认使用 `https://fastly.jsdelivr.net/gh/ultralan/PluginVerse@published` 作为发布地址；需要验证其他仓库或自定义域名时，设置 `PLUGINVERSE_PUBLIC_BASE_URL` 覆盖即可。
+## 新增一个插件
 
-之后新增站点插件时，只改 `server/plugins/` 并推送。用户侧仍然使用同一个客户端入口；插件代码每次页面加载都会按 manifest 动态拉取，不需要用户重新安装。若浏览器缓存或网络异常导致没有拉到新插件，可以在油猴菜单里点 `PluginVerse：清缓存并重新加载插件`。
-
-## 新增插件
-
-新增一个目录：
-
-```text
-server/plugins/<plugin-id>/
-  plugin.json
-  plugin.user.js
-```
-
-`plugin.json` 必须包含：
-
-- `id`
-- `name`
-- `version`
-- `description`
-- `matches`
-
-`plugin.user.js` 通过全局参数接收 `PluginVerse` API：
+1. 新建仓库 `tampermonkey-plugin-<id>`，包含 `plugin.json` + `plugin.user.js`：
 
 ```js
-(function (PluginVerse) {
-  PluginVerse.log("info", "plugin_boot", {});
-})(PluginVerse);
+(function (TM) {
+  TM.log("info", "plugin_boot", {});
+})(TM);
 ```
 
-可用 API：
+可用 API（由客户端注入）：
 
-- `PluginVerse.log(level, event, data)`：写日志到本地缓存和 Supabase。
-- `PluginVerse.getValue(key, fallback)` / `PluginVerse.setValue(key, value)`：插件级持久化。
-- `PluginVerse.setClipboard(text)`：写剪贴板。
-- `PluginVerse.postJson(url, payload)`：跨域 POST JSON。
-- `PluginVerse.page()`：读取当前页面快照。
+- `TM.log(level, event, data)`：写日志
+- `TM.getValue(key, fallback)` / `TM.setValue(key, value)`：插件级持久化
+- `TM.rest(path, { method, payload, prefer })`：访问 `tampermonkey_base` schema 的 PostgREST 接口（自动带认证与 `Content-Profile` 头）
+- `TM.setClipboard(text)`、`TM.registerMenuCommand(name, handler)`、`TM.page()`
+
+2. 复制本仓或任意插件仓的 `.github/workflows/publish.yml`（发布 + 注册）；
+3. 配置 secret `TMB_SUPABASE_SERVICE_ROLE_KEY`；
+4. 推送 `main`，注册完成，客户端自动发现。
+
+参考实现：[tampermonkey-plugin-mianshiya](https://github.com/ultralan/tampermonkey-plugin-mianshiya)（面试鸭题库自动采集）。
+
+## 已知限制
+
+- 客户端插件脚本经 jsDelivr 分发，CDN 边缘缓存发布后可能有几分钟延迟；
+- 注册中心（Supabase）不可达时客户端使用本地缓存的插件列表降级运行；
+- 客户端自身的更新依赖 Tampermonkey 的版本检查（`0.1.<run number>` 单调递增），插件则每次页面加载都拉最新。
 
 ## 本地遗留文件
 
-旧的本地调试脚本、题库数据和日志保留在工作目录中用于对照，但不进入 Git 仓库。新的主链路已经不依赖本地 server。
+工作目录中的 `mianshiya-*.mjs` 等旧调试脚本与题库数据不进入 Git 仓库，仅供历史对照。

@@ -1,4 +1,5 @@
 dist/
+downloads/
 .env
 .env.*
 !.env.example

@@ -38,10 +38,10 @@ jobs:
       - name: Build
         run: pnpm run build
         env:
-          PLUGINVERSE_PUBLIC_BASE_URL: ${{ vars.PLUGINVERSE_PUBLIC_BASE_URL || format('https://fastly.jsdelivr.net/gh/{0}/{1}@published', github.repository_owner, github.event.repository.name) }}
-          PLUGINVERSE_SUPABASE_URL: ${{ vars.PLUGINVERSE_SUPABASE_URL || 'https://ovxaymldzdiatllhjbvx.supabase.co' }}
-          PLUGINVERSE_SUPABASE_ANON_KEY: ${{ secrets.PLUGINVERSE_SUPABASE_ANON_KEY || 'sb_publishable_H3ea5scu5VwoJAkA6ZDQtA_WTj-Eycq' }}
-          PLUGINVERSE_BUILD_VERSION: 0.1.${{ github.run_number }}
+          TMB_PUBLIC_BASE_URL: ${{ vars.TMB_PUBLIC_BASE_URL || format('https://fastly.jsdelivr.net/gh/{0}/{1}@published', github.repository_owner, github.event.repository.name) }}
+          TMB_SUPABASE_URL: ${{ vars.TMB_SUPABASE_URL || 'https://ovxaymldzdiatllhjbvx.supabase.co' }}
+          TMB_SUPABASE_ANON_KEY: ${{ secrets.TMB_SUPABASE_ANON_KEY || 'sb_publishable_H3ea5scu5VwoJAkA6ZDQtA_WTj-Eycq' }}
+          TMB_BUILD_VERSION: 0.1.${{ github.run_number }}
 
       - name: Verify
         run: pnpm run verify
@@ -49,9 +49,12 @@ jobs:
       - name: Record build
         run: pnpm run record-build
         env:
-          PLUGINVERSE_SUPABASE_URL: ${{ vars.PLUGINVERSE_SUPABASE_URL }}
-          PLUGINVERSE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PLUGINVERSE_SUPABASE_SERVICE_ROLE_KEY }}
+          TMB_SUPABASE_URL: ${{ vars.TMB_SUPABASE_URL || 'https://ovxaymldzdiatllhjbvx.supabase.co' }}
+          TMB_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TMB_SUPABASE_SERVICE_ROLE_KEY }}
+          TMB_BUILD_VERSION: 0.1.${{ github.run_number }}
+          TMB_PUBLIC_BASE_URL: ${{ vars.TMB_PUBLIC_BASE_URL || format('https://fastly.jsdelivr.net/gh/{0}/{1}@published', github.repository_owner, github.event.repository.name) }}
           GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
 
       - name: Publish runtime branch
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
@@ -69,5 +72,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "发布 PluginVerse 运行时 ${GITHUB_SHA}"
+          git commit -m "发布 Tampermonkey Base 客户端 ${GITHUB_SHA}"
           git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" published
