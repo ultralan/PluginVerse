@@ -63,6 +63,12 @@ alter table tampermonkey_base.builds enable row level security;
 
 -- schema 访问授权
 grant usage on schema tampermonkey_base to anon, authenticated;
+-- service_role 绕过 RLS，但新建 schema 不会自动获得 USAGE，必须显式授予，
+-- 否则 Actions 写注册表/构建记录会报 permission denied for schema。
+grant usage on schema tampermonkey_base to service_role;
+grant all on all tables in schema tampermonkey_base to service_role;
+grant all on all sequences in schema tampermonkey_base to service_role;
+alter default privileges in schema tampermonkey_base grant all on tables to service_role;
 
 -- 注册中心：anon/authenticated 只读；写入仅 service role（无写 policy，绕过 RLS）。
 grant select on tampermonkey_base.plugins to anon, authenticated;
