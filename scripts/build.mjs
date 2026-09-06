@@ -9,7 +9,7 @@ const clientEntry = "client/tampermonkey-base.user.js";
 const publicBaseUrl = stripTrailingSlash(
   normalizePublicBaseUrl(
     process.env.TMB_PUBLIC_BASE_URL ||
-      "https://fastly.jsdelivr.net/gh/ultralan/tampermonkey-base@published",
+      "https://cdn.jsdelivr.net/gh/ultralan/tampermonkey-base@published",
   ),
 );
 const supabaseUrl = process.env.TMB_SUPABASE_URL || "";

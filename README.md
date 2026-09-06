@@ -3,7 +3,7 @@
 Tampermonkey Base 是一个油猴插件基座：**一个客户端 + Supabase 注册中心 + 任意数量的独立插件仓库**，微服务式的动态注册与发现。
 
 <p>
-  <a href="https://fastly.jsdelivr.net/gh/ultralan/tampermonkey-base@published/client/tampermonkey-base.user.js" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;text-decoration:none;">一键安装客户端</a>
+  <a href="https://cdn.jsdelivr.net/gh/ultralan/tampermonkey-base@published/client/tampermonkey-base.user.js" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;text-decoration:none;">一键安装客户端</a>
 </p>
 
 ## 架构
@@ -43,7 +43,7 @@ pnpm run check
 
 ## 环境变量
 
-- `TMB_PUBLIC_BASE_URL`：发布根地址，默认 `https://fastly.jsdelivr.net/gh/ultralan/tampermonkey-base@published`
+- `TMB_PUBLIC_BASE_URL`：发布根地址，默认 `https://cdn.jsdelivr.net/gh/ultralan/tampermonkey-base@published`
 - `TMB_SUPABASE_URL` / `TMB_SUPABASE_ANON_KEY`：注入客户端，用于查询注册中心与写日志
 - `TMB_SUPABASE_SERVICE_ROLE_KEY`：Actions 写构建记录用（可选）
 
